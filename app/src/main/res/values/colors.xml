@@ -2,4 +2,12 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="primaryDarkBackground">#252422</color>
+    <color name="secondaryDarkBackground">#403d39</color>
+    <color name="secondaryFontColor">#ccc5b9</color>
+    <color name="fontColor">#fffcf2</color>
+    <color name="successColor">#4CAF50</color>
+    <color name="errorColor">#F44336</color>
+    <color name="buttonColor">#eb5e28</color>
 </resources>

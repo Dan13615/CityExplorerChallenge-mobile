@@ -1,6 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/nav_graph">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/mainScreenFragment">
 
+    <fragment
+        android:id="@+id/mainScreenFragment"
+        android:name="com.example.cityexplorerchallenge.MainScreenFragment"
+        android:label="Main Screen"
+        tools:layout="@layout/fragment_main">
+        <action
+            android:id="@+id/action_main_to_map"
+            app:destination="@id/mapFragment" />
+        <action
+            android:id="@+id/action_main_to_details"
+            app:destination="@id/challengeDetailsFragment" />
+        <action
+            android:id="@+id/action_main_to_history"
+            app:destination="@id/historyFragment" />
+        <action
+            android:id="@+id/action_main_to_statistics"
+            app:destination="@id/statisticsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/mapFragment"
+        android:name="com.example.cityexplorerchallenge.MapFragment"
+        android:label="Map Screen"
+        tools:layout="@layout/fragment_map" >
+        <action
+            android:id="@+id/action_map_to_main"
+            app:destination="@id/mainScreenFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/challengeDetailsFragment"
+        android:name="com.example.cityexplorerchallenge.ChallengeDetailsFragment"
+        android:label="Challenge Details"
+        tools:layout="@layout/fragment_challenge_details">
+        <action
+            android:id="@+id/action_details_to_main"
+            app:destination="@id/mainScreenFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.example.cityexplorerchallenge.HistoryFragment"
+        android:label="History"
+        tools:layout="@layout/fragment_history">
+        <action
+            android:id="@+id/action_history_to_main"
+            app:destination="@id/mainScreenFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/statisticsFragment"
+        android:name="com.example.cityexplorerchallenge.StatisticsFragment"
+        android:label="Statistics"
+        tools:layout="@layout/fragment_statistics">
+        <action
+            android:id="@+id/action_statistics_to_main"
+            app:destination="@id/mainScreenFragment" />
+    </fragment>
 </navigation>

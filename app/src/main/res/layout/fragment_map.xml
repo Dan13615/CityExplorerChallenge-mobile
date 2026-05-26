@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/map_view_placeholder"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#E0E0E0"
+        app:layout_constraintBottom_toTopOf="@id/card_map_details"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="[ Map View Display Placeholder ]\nuser marker -> destination marker"
+        android:textAlignment="center"
+        android:textColor="#757575"
+        app:layout_constraintBottom_toBottomOf="@id/map_view_placeholder"
+        app:layout_constraintEnd_toEndOf="@id/map_view_placeholder"
+        app:layout_constraintStart_toStartOf="@id/map_view_placeholder"
+        app:layout_constraintTop_toTopOf="@id/map_view_placeholder" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_map_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@color/primaryDarkBackground">
+
+            <TextView
+                android:id="@+id/tv_map_target"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Target: Museum / Historical building"
+                android:textColor="@color/fontColor"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_map_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Distance: 320 m"
+                android:textColor="@color/secondaryFontColor" />
+
+            <Button
+                android:id="@+id/btn_check_completion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Check Completion"
+                android:textColor="@color/fontColor"
+                android:backgroundTint="@color/buttonColor" />
+
+            <Button
+                android:id="@+id/btn_go_to_main"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Back to Home"
+                android:textColor="@color/fontColor"
+                android:backgroundTint="@color/secondaryDarkBackground" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>
