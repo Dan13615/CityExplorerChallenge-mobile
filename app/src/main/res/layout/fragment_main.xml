@@ -58,7 +58,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Visit a historical place nearby"
+                        android:text="No active challenge yet"
                         android:textColor="@color/fontColor"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -68,7 +68,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Category: Culture / History"
+                        android:text="Category: --"
                         android:textColor="@color/secondaryFontColor" />
 
                     <TextView
@@ -76,7 +76,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Distance: 750 m"
+                        android:text="Distance: --"
                         android:textColor="@color/secondaryFontColor" />
 
                     <TextView
@@ -84,8 +84,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Status: Active"
-                        android:textColor="@color/successColor"
+                        android:text="Status: Inactive"
+                        android:textColor="@android:color/darker_gray"
                         android:textStyle="bold" />
 
                     <Button
