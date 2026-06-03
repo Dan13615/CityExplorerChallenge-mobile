@@ -46,6 +46,7 @@ secrets {
 }
 
 dependencies {
+    implementation("androidx.activity:activity-ktx:1.12.0")
     implementation("org.osmdroid:osmdroid-android:6.1.18")
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)

@@ -24,9 +24,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="City Explorer Challenge"
-                android:textColor="@color/fontColor"
-                android:textSize="24sp"
+                android:textColor="@color/buttonColor"
+                android:textSize="32sp"
                 android:textStyle="bold"
+                android:layout_marginTop="16dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
@@ -51,7 +52,7 @@
                         android:layout_height="wrap_content"
                         android:text="Active Challenge"
                         android:textColor="@color/secondaryFontColor"
-                        android:textSize="14sp" />
+                        android:textSize="18sp" />
 
                     <TextView
                         android:id="@+id/tv_challenge_title"
@@ -60,7 +61,7 @@
                         android:layout_marginTop="4dp"
                         android:text="No active challenge yet"
                         android:textColor="@color/fontColor"
-                        android:textSize="18sp"
+                        android:textSize="26sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -69,6 +70,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text="Category: --"
+                        android:textSize="18sp"
                         android:textColor="@color/secondaryFontColor" />
 
                     <TextView
@@ -77,6 +79,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Distance: --"
+                        android:textSize="18sp"
                         android:textColor="@color/secondaryFontColor" />
 
                     <TextView
@@ -85,6 +88,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Status: Inactive"
+                        android:textSize="18sp"
                         android:textColor="@android:color/darker_gray"
                         android:textStyle="bold" />
 
@@ -95,6 +99,7 @@
                         android:layout_marginTop="12dp"
                         android:backgroundTint="@color/buttonColor"
                         android:text="Open Map"
+                        android:textSize="18sp"
                         android:textColor="@color/fontColor" />
 
                     <Button
@@ -102,7 +107,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
+                        android:textSize="18sp"
                         android:backgroundTint="@color/primaryDarkBackground"
+                        android:textColor="@color/fontColor"
                         android:text="Challenge Details" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -128,7 +135,7 @@
                         android:layout_height="wrap_content"
                         android:text="Progress"
                         android:textColor="@color/fontColor"
-                        android:textSize="14sp"
+                        android:textSize="26sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -137,6 +144,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Completed today: 2"
+                        android:textSize="18sp"
                         android:textColor="@color/secondaryFontColor" />
 
                     <TextView
@@ -145,6 +153,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Total completed: 14"
+                        android:textSize="18sp"
                         android:textColor="@color/secondaryFontColor" />
 
                     <Button
@@ -153,6 +162,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:backgroundTint="@color/buttonColor"
+                        android:textColor="@color/fontColor"
+                        android:textSize="18sp"
                         android:text="New Challenge" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -179,6 +190,7 @@
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:text="History"
+            android:textSize="18sp"
             android:textColor="@color/buttonColor" />
 
         <Button
@@ -189,6 +201,7 @@
             android:layout_marginStart="4dp"
             android:layout_weight="1"
             android:text="Stats"
+            android:textSize="18sp"
             android:textColor="@color/buttonColor" />
     </LinearLayout>
 
