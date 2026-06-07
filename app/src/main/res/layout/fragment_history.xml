@@ -12,7 +12,8 @@
         android:layout_height="wrap_content"
         android:text="Challenge History"
         android:textColor="@color/buttonColor"
-        android:textSize="22sp"
+        android:layout_marginTop="32dp"
+        android:textSize="32sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -124,6 +125,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/buttonColor"
+        android:textSize="18sp"
         android:text="Back to Home"
         android:textColor="@color/fontColor"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -12,7 +12,8 @@
         android:layout_height="wrap_content"
         android:text="Statistics"
         android:textColor="@color/buttonColor"
-        android:textSize="24sp"
+        android:textSize="32sp"
+        android:layout_marginTop="32dp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -51,7 +52,7 @@
                         android:layout_height="wrap_content"
                         android:text="Total completed challenges: 14"
                         android:textColor="@color/secondaryFontColor"
-                        android:textSize="16sp" />
+                        android:textSize="18sp" />
 
                     <TextView
                         android:id="@+id/tv_stats_distance"
@@ -60,13 +61,14 @@
                         android:layout_marginTop="8dp"
                         android:text="Total explored distance: 8.4 km"
                         android:textColor="@color/secondaryFontColor"
-                        android:textSize="16sp" />
+                        android:textSize="18sp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textSize="18sp"
                 android:layout_marginTop="24dp"
                 android:text="Categories visited:"
                 android:textColor="@color/fontColor"
@@ -80,7 +82,7 @@
                 android:lineSpacingExtra="4dp"
                 android:text="Nature: 5\nCulture: 4\nFood: 3\nSport: 2"
                 android:textColor="@color/secondaryFontColor"
-                android:textSize="16sp" />
+                android:textSize="18sp" />
 
             <TextView
                 android:id="@+id/tv_stats_most_explored"
@@ -89,7 +91,7 @@
                 android:layout_marginTop="24dp"
                 android:text="Most explored category: Nature"
                 android:textColor="@color/fontColor"
-                android:textSize="16sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
@@ -102,6 +104,7 @@
         android:backgroundTint="@color/buttonColor"
         android:text="Back to Home"
         android:textColor="@color/fontColor"
+        android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
