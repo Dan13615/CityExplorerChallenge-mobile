@@ -1,5 +1,6 @@
 package com.example.cityexplorerchallenge
 
+import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -7,10 +8,20 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import org.osmdroid.util.GeoPoint
 import java.net.HttpURLConnection
 import java.net.URL
+
+data class CompletedChallenge(
+    val name: String,
+    val category: String,
+    val latitude: Double,
+    val longitude: Double,
+    val timestamp: Long,
+    val distanceText: String
+)
 
 class ChallengeViewModel : ViewModel() {
 
@@ -19,6 +30,9 @@ class ChallengeViewModel : ViewModel() {
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _completedChallenges = MutableLiveData<List<CompletedChallenge>>()
+    val completedChallenges: LiveData<List<CompletedChallenge>> = _completedChallenges
 
     fun createDynamicChallenge(userLatitude: Double, userLongitude: Double, tags: List<String>) {
         _isLoading.postValue(true)
@@ -94,6 +108,60 @@ class ChallengeViewModel : ViewModel() {
 
     fun updateDistance(distanceText: String) {
         _activeChallenge.value = _activeChallenge.value?.copy(distanceText = distanceText)
+    }
+
+    fun completeActiveChallenge(context: Context) {
+        val challenge = _activeChallenge.value ?: return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+            val completedChallengesJson = sharedPrefs.getString("completed_list", "[]") ?: "[]"
+
+            val jsonArray = JSONArray(completedChallengesJson)
+            val challengeJson = JSONObject().apply {
+                put("name", challenge.name)
+                put("category", challenge.category)
+                put("lat", challenge.targetPoint.latitude)
+                put("lon", challenge.targetPoint.longitude)
+                put("timestamp", System.currentTimeMillis())
+                put("distance", challenge.distanceText)
+            }
+            jsonArray.put(challengeJson)
+
+            sharedPrefs.edit().putString("completed_list", jsonArray.toString()).apply()
+
+            loadHistory(context) // Refresh history after completion
+
+            withContext(Dispatchers.Main) {
+                _activeChallenge.value = null
+            }
+        }
+    }
+
+    fun loadHistory(context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+            val jsonString = sharedPrefs.getString("completed_list", "[]") ?: "[]"
+            val jsonArray = JSONArray(jsonString)
+            val list = mutableListOf<CompletedChallenge>()
+
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                list.add(
+                    CompletedChallenge(
+                        obj.getString("name"),
+                        obj.getString("category"),
+                        obj.getDouble("lat"),
+                        obj.getDouble("lon"),
+                        obj.getLong("timestamp"),
+                        obj.optString("distance", "--")
+                    )
+                )
+            }
+            // Sort by most recent
+            list.sortByDescending { it.timestamp }
+            _completedChallenges.postValue(list)
+        }
     }
 
     private suspend fun postErrorClear() {

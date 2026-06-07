@@ -11,11 +11,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import org.osmdroid.util.GeoPoint
+import java.util.Calendar
 
 class MainScreenFragment : Fragment(R.layout.fragment_main) {
 
@@ -39,10 +41,14 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val cardActive = view.findViewById<CardView>(R.id.card_active_challenge)
         val tvChallengeTitle = view.findViewById<TextView>(R.id.tv_challenge_title)
         val tvChallengeCategory = view.findViewById<TextView>(R.id.tv_challenge_category)
         val tvChallengeDistance = view.findViewById<TextView>(R.id.tv_challenge_distance)
         val tvChallengeStatus = view.findViewById<TextView>(R.id.tv_challenge_status)
+        
+        val tvCompletedToday = view.findViewById<TextView>(R.id.tv_completed_today)
+        val tvTotalCompleted = view.findViewById<TextView>(R.id.tv_total_completed)
 
         viewModel.activeChallenge.observe(viewLifecycleOwner) { challenge ->
             if (challenge != null && challenge.isActive) {
@@ -51,14 +57,36 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
                 tvChallengeDistance.text = challenge.distanceText
                 tvChallengeStatus.text = "Status: Active"
                 tvChallengeStatus.setTextColor(resources.getColor(R.color.successColor, null))
+                
+                view.findViewById<Button>(R.id.btn_open_map).visibility = View.VISIBLE
+                view.findViewById<Button>(R.id.btn_challenge_details).visibility = View.VISIBLE
             } else {
                 tvChallengeTitle.text = "No active challenge yet"
                 tvChallengeCategory.text = "Category: --"
                 tvChallengeDistance.text = "Distance: --"
                 tvChallengeStatus.text = "Status: Inactive"
                 tvChallengeStatus.setTextColor(resources.getColor(android.R.color.darker_gray, null))
+                
+                view.findViewById<Button>(R.id.btn_open_map).visibility = View.GONE
+                view.findViewById<Button>(R.id.btn_challenge_details).visibility = View.GONE
             }
         }
+
+        viewModel.completedChallenges.observe(viewLifecycleOwner) { history ->
+            val total = history.size
+            tvTotalCompleted.text = "Total completed: $total"
+
+            val today = Calendar.getInstance()
+            val completedToday = history.count { 
+                val cal = Calendar.getInstance()
+                cal.timeInMillis = it.timestamp
+                cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
+                cal.get(Calendar.YEAR) == today.get(Calendar.YEAR)
+            }
+            tvCompletedToday.text = "Completed today: $completedToday"
+        }
+
+        viewModel.loadHistory(requireContext())
 
         view.findViewById<Button>(R.id.btn_new_challenge).setOnClickListener {
             checkPermissionsAndStartChallenge()

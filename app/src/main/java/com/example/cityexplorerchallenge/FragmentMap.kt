@@ -14,6 +14,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -135,7 +136,23 @@ class MapFragment : Fragment(R.layout.fragment_map) {
             }
         }
 
-        view.findViewById<Button>(R.id.btn_check_completion).setOnClickListener { findNavController().navigateUp() }
+        view.findViewById<Button>(R.id.btn_check_completion).setOnClickListener {
+            val userLocation = myLocationOverlay?.myLocation
+            val challenge = viewModel.activeChallenge.value
+
+            if (userLocation != null && challenge != null) {
+                val distance = userLocation.distanceToAsDouble(challenge.targetPoint)
+                if (distance <= 20.0) {
+                    viewModel.completeActiveChallenge(requireContext())
+                    Toast.makeText(requireContext(), "Challenge Completed! Well done!", Toast.LENGTH_LONG).show()
+                    findNavController().navigateUp()
+                } else {
+                    Toast.makeText(requireContext(), "You are still ${distance.toInt()}m away. Get closer!", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(requireContext(), "Location not available. Please wait for GPS fix.", Toast.LENGTH_SHORT).show()
+            }
+        }
         view.findViewById<Button>(R.id.btn_go_to_main).setOnClickListener { findNavController().navigateUp() }
 
         checkAndRequestLocationPermissions()
