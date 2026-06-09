@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: city_explorer_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: city_explorer
+    ports:
+      - "7654:7654"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - city_explorer_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: city_explorer_server
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: city_explorer
+      JWT_SECRET: cityexplorerchallengeauth
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - city_explorer_network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+
+networks:
+  city_explorer_network:
+    driver: bridge
