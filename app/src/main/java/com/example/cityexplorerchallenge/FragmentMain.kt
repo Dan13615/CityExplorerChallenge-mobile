@@ -55,7 +55,7 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
                 tvChallengeTitle.text = challenge.name
                 tvChallengeCategory.text = "Category: ${challenge.category}"
                 tvChallengeDistance.text = challenge.distanceText
-                tvChallengeStatus.text = "Status: Active"
+                tvChallengeStatus.text = "Status: In Progress"
                 tvChallengeStatus.setTextColor(resources.getColor(R.color.successColor, null))
                 
                 view.findViewById<Button>(R.id.btn_open_map).visibility = View.VISIBLE
@@ -87,6 +87,7 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
         }
 
         viewModel.loadHistory(requireContext())
+        viewModel.loadActiveChallenge(requireContext())
 
         view.findViewById<Button>(R.id.btn_new_challenge).setOnClickListener {
             checkPermissionsAndStartChallenge()
@@ -158,7 +159,7 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
                 if (selectedTags.isEmpty()) {
                     Toast.makeText(context, "Please choose a filter configuration!", Toast.LENGTH_SHORT).show()
                 } else {
-                    viewModel.createDynamicChallenge(userPoint.latitude, userPoint.longitude, selectedTags)
+                    viewModel.createDynamicChallenge(requireContext(), userPoint.latitude, userPoint.longitude, selectedTags)
                 }
                 dialog.dismiss()
             }

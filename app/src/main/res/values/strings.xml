@@ -4,4 +4,9 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="challenge_details">Challenge Details</string>
     <string name="city_explorer_challenge">City Explorer Challenge</string>
+    <string name="join_adventure">Join the Adventure</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="register_prompt">Don\'t have an account? Register</string>
 </resources>

@@ -214,7 +214,7 @@ class MapFragment : Fragment(R.layout.fragment_map) {
             }
 
             withContext(Dispatchers.Main) {
-                viewModel.updateDistance(distanceText)
+                viewModel.updateDistance(requireContext(), distanceText)
 
                 if (routePoints.isNotEmpty()) {
                     roadPolyline?.let { mapView.overlays.remove(it) }

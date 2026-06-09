@@ -34,7 +34,7 @@ class ChallengeViewModel : ViewModel() {
     private val _completedChallenges = MutableLiveData<List<CompletedChallenge>>()
     val completedChallenges: LiveData<List<CompletedChallenge>> = _completedChallenges
 
-    fun createDynamicChallenge(userLatitude: Double, userLongitude: Double, tags: List<String>) {
+    fun createDynamicChallenge(context: Context, userLatitude: Double, userLongitude: Double, tags: List<String>) {
         _isLoading.postValue(true)
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -85,29 +85,33 @@ class ChallengeViewModel : ViewModel() {
 
                         withContext(Dispatchers.Main) {
                             _isLoading.value = false
-                            _activeChallenge.value = ChallengeState(
+                            val newState = ChallengeState(
                                 name = placeName,
                                 category = parsedCategory,
-                                startPoint = GeoPoint(userLatitude, userLongitude), // Saved explicitly here
+                                startPoint = GeoPoint(userLatitude, userLongitude),
                                 targetPoint = GeoPoint(lat, lon),
                                 isActive = true
                             )
+                            _activeChallenge.value = newState
+                            saveActiveChallenge(context, newState)
                         }
                     } else {
-                        postErrorClear()
+                        postErrorClear(context)
                     }
                 } else {
-                    postErrorClear()
+                    postErrorClear(context)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                postErrorClear()
+                postErrorClear(context)
             }
         }
     }
 
-    fun updateDistance(distanceText: String) {
-        _activeChallenge.value = _activeChallenge.value?.copy(distanceText = distanceText)
+    fun updateDistance(context: Context, distanceText: String) {
+        val updated = _activeChallenge.value?.copy(distanceText = distanceText)
+        _activeChallenge.value = updated
+        updated?.let { saveActiveChallenge(context, it) }
     }
 
     fun completeActiveChallenge(context: Context) {
@@ -128,7 +132,10 @@ class ChallengeViewModel : ViewModel() {
             }
             jsonArray.put(challengeJson)
 
-            sharedPrefs.edit().putString("completed_list", jsonArray.toString()).apply()
+            sharedPrefs.edit().apply {
+                putString("completed_list", jsonArray.toString())
+                remove("active_challenge")
+            }.apply()
 
             loadHistory(context) // Refresh history after completion
 
@@ -164,10 +171,46 @@ class ChallengeViewModel : ViewModel() {
         }
     }
 
-    private suspend fun postErrorClear() {
+    fun loadActiveChallenge(context: Context) {
+        val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+        val jsonString = sharedPrefs.getString("active_challenge", null) ?: return
+        try {
+            val json = JSONObject(jsonString)
+            val state = ChallengeState(
+                name = json.getString("name"),
+                category = json.getString("category"),
+                startPoint = GeoPoint(json.getDouble("start_lat"), json.getDouble("start_lon")),
+                targetPoint = GeoPoint(json.getDouble("target_lat"), json.getDouble("target_lon")),
+                distanceText = json.getString("distance"),
+                isActive = json.getBoolean("isActive")
+            )
+            _activeChallenge.postValue(state)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun saveActiveChallenge(context: Context, state: ChallengeState) {
+        val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+        val json = JSONObject().apply {
+            put("name", state.name)
+            put("category", state.category)
+            put("start_lat", state.startPoint.latitude)
+            put("start_lon", state.startPoint.longitude)
+            put("target_lat", state.targetPoint.latitude)
+            put("target_lon", state.targetPoint.longitude)
+            put("distance", state.distanceText)
+            put("isActive", state.isActive)
+        }
+        sharedPrefs.edit().putString("active_challenge", json.toString()).apply()
+    }
+
+    private suspend fun postErrorClear(context: Context) {
         withContext(Dispatchers.Main) {
             _isLoading.value = false
             _activeChallenge.value = null
+            context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+                .edit().remove("active_challenge").apply()
         }
     }
 }
