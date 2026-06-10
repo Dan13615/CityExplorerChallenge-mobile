@@ -13,6 +13,7 @@ import org.json.JSONObject
 import org.osmdroid.util.GeoPoint
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 data class CompletedChallenge(
     val name: String,
@@ -34,6 +35,9 @@ class ChallengeViewModel : ViewModel() {
     private val _completedChallenges = MutableLiveData<List<CompletedChallenge>>()
     val completedChallenges: LiveData<List<CompletedChallenge>> = _completedChallenges
 
+    private val _challengeProposals = MutableLiveData<List<ChallengeState>?>()
+    val challengeProposals: LiveData<List<ChallengeState>?> = _challengeProposals
+
     fun createDynamicChallenge(context: Context, userLatitude: Double, userLongitude: Double, tags: List<String>) {
         _isLoading.postValue(true)
 
@@ -42,7 +46,7 @@ class ChallengeViewModel : ViewModel() {
             val subQueries = StringBuilder()
 
             for (tag in tags) {
-                subQueries.append("node[$tag](around:1500, $userLatitude, $userLongitude);\n")
+                subQueries.append("nwr[$tag](around:1500, $userLatitude, $userLongitude);\n")
             }
 
             val query = """
@@ -50,7 +54,7 @@ class ChallengeViewModel : ViewModel() {
                 (
                   $subQueries
                 );
-                out body 15;
+                out center body 15;
             """.trimIndent()
 
             try {
@@ -71,8 +75,18 @@ class ChallengeViewModel : ViewModel() {
                     if (elements.length() > 0) {
                         val randomIndex = (0 until elements.length()).random()
                         val element = elements.getJSONObject(randomIndex)
-                        val lat = element.getDouble("lat")
-                        val lon = element.getDouble("lon")
+                        
+                        val lat = if (element.has("lat")) {
+                            element.getDouble("lat")
+                        } else {
+                            element.getJSONObject("center").getDouble("lat")
+                        }
+                        
+                        val lon = if (element.has("lon")) {
+                            element.getDouble("lon")
+                        } else {
+                            element.getJSONObject("center").getDouble("lon")
+                        }
 
                         val nodeTags = element.optJSONObject("tags")
                         val placeName = nodeTags?.optString("name", "Unnamed Target Location") ?: "Unnamed Target Location"
@@ -80,6 +94,8 @@ class ChallengeViewModel : ViewModel() {
                         val parsedCategory = when {
                             nodeTags?.has("historic") == true -> "Culture / History"
                             nodeTags?.has("amenity") == true && nodeTags.getString("amenity") == "restaurant" -> "Food / Restaurant"
+                            nodeTags?.has("leisure") == true && nodeTags.getString("leisure") == "park" -> "Nature / Park"
+                            nodeTags?.has("tourism") == true && nodeTags.getString("tourism") == "attraction" -> "Tourist Attraction"
                             else -> "Cafe / Relaxation"
                         }
 
@@ -187,6 +203,133 @@ class ChallengeViewModel : ViewModel() {
             _activeChallenge.postValue(state)
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    fun setActiveChallenge(context: Context, challenge: ChallengeState) {
+        _activeChallenge.value = challenge
+        saveActiveChallenge(context, challenge)
+        clearProposals()
+    }
+
+    fun clearProposals() {
+        _challengeProposals.value = null
+    }
+
+    fun proposeRandomChallenges(context: Context, userLat: Double, userLon: Double) {
+        _isLoading.postValue(true)
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            val history = _completedChallenges.value ?: emptyList()
+            
+            val allCategories = listOf("Culture / History", "Food / Restaurant", "Nature / Park", "Tourist Attraction", "Cafe / Relaxation")
+            val counts = history.groupingBy { it.category }.eachCount()
+            
+            val leastVisitedCategory = allCategories.minByOrNull { counts.getOrDefault(it, 0) }
+            val mostVisitedCategory = allCategories.maxByOrNull { counts.getOrDefault(it, 0) }
+
+            val tags = listOf("historic", "amenity=restaurant", "leisure=park", "tourism=attraction", "amenity=cafe")
+            val urlString = "https://overpass-api.de/api/interpreter"
+            val subQueries = StringBuilder()
+            for (tag in tags) {
+                subQueries.append("nwr[$tag](around:2500, $userLat, $userLon);\n")
+            }
+
+            val query = """
+                [out:json][timeout:30];
+                (
+                  $subQueries
+                );
+                out center body 50;
+            """.trimIndent()
+
+            try {
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.setRequestProperty("User-Agent", "CityExplorerChallenge/1.0")
+                connection.outputStream.use { os -> os.write(query.toByteArray(Charsets.UTF_8)) }
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                    val elements = JSONObject(response).getJSONArray("elements")
+                    val rawProposals = mutableListOf<ChallengeState>()
+                    val userGeoPoint = GeoPoint(userLat, userLon)
+                    
+                    for (i in 0 until elements.length()) {
+                        val element = elements.getJSONObject(i)
+                        val lat = if (element.has("lat")) element.getDouble("lat") else element.getJSONObject("center").getDouble("lat")
+                        val lon = if (element.has("lon")) element.getDouble("lon") else element.getJSONObject("center").getDouble("lon")
+                        val nodeTags = element.optJSONObject("tags")
+                        val placeName = nodeTags?.optString("name", "Mystery Location") ?: "Mystery Location"
+                        
+                        val cat = when {
+                            nodeTags?.has("leisure") == true && nodeTags.getString("leisure") == "park" -> "Nature / Park"
+                            nodeTags?.has("historic") == true -> "Culture / History"
+                            nodeTags?.has("tourism") == true -> "Tourist Attraction"
+                            nodeTags?.has("amenity") == true && nodeTags.getString("amenity") == "restaurant" -> "Food / Restaurant"
+                            else -> "Cafe / Relaxation"
+                        }
+
+                        val distance = GeoPoint(lat, lon).distanceToAsDouble(userGeoPoint)
+                        if (distance < 500.0) continue // Only propose challenges at least 500m away
+
+                        val distText = if (distance >= 1000) {
+                            String.format(Locale.getDefault(), "%.2f km", distance / 1000.0)
+                        } else {
+                            String.format(Locale.getDefault(), "%d m", distance.toInt())
+                        }
+
+                        rawProposals.add(ChallengeState(
+                            name = placeName,
+                            category = cat,
+                            startPoint = userGeoPoint,
+                            targetPoint = GeoPoint(lat, lon),
+                            distanceText = distText,
+                            isActive = false
+                        ))
+                    }
+
+                    // Algorithm logic
+                    val nearestMostVisited = rawProposals
+                        .filter { it.category == mostVisitedCategory }
+                        .minByOrNull { it.targetPoint.distanceToAsDouble(userGeoPoint) }
+
+                    val finalProposals = mutableListOf<ChallengeState>()
+                    
+                    // 1. Add nearest from liked category if exists
+                    nearestMostVisited?.let {
+                        finalProposals.add(it.copy(selectionReason = "You love this category! This is the closest discovery of its kind near you."))
+                    }
+
+                    // 2. Add others, prioritizing least visited
+                    val remainingPool = rawProposals.filter { it.name != nearestMostVisited?.name }.shuffled()
+                    
+                    val leastVisitedPool = remainingPool.filter { it.category == leastVisitedCategory }
+                    val othersPool = remainingPool.filter { it.category != leastVisitedCategory }
+
+                    for (p in leastVisitedPool) {
+                        if (finalProposals.size >= 10) break
+                        finalProposals.add(p.copy(selectionReason = "This category is the one you've explored the least. Broaden your horizons!"))
+                    }
+
+                    for (p in othersPool) {
+                        if (finalProposals.size >= 10) break
+                        finalProposals.add(p.copy(selectionReason = "A new adventure waiting for you nearby."))
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        _isLoading.value = false
+                        _challengeProposals.value = finalProposals
+                    }
+                } else {
+                    postErrorClear(context)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                postErrorClear(context)
+            }
         }
     }
 

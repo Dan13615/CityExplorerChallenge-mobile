@@ -165,6 +165,16 @@
                         android:textColor="@color/fontColor"
                         android:textSize="18sp"
                         android:text="New Challenge" />
+
+                    <Button
+                        android:id="@+id/btn_random_challenge"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:backgroundTint="@color/secondaryDarkBackground"
+                        android:textColor="@color/fontColor"
+                        android:textSize="18sp"
+                        android:text="Random Challenge" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

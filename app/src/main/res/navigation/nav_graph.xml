@@ -34,6 +34,21 @@
         <action
             android:id="@+id/action_main_to_statistics"
             app:destination="@id/statisticsFragment" />
+        <action
+            android:id="@+id/action_main_to_proposals"
+            app:destination="@id/proposalsFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/proposalsFragment"
+        android:name="com.example.cityexplorerchallenge.ProposalsFragment"
+        android:label="Proposals"
+        tools:layout="@layout/fragment_proposals">
+        <action
+            android:id="@+id/action_proposals_to_main"
+            app:destination="@id/mainScreenFragment"
+            app:popUpTo="@id/mainScreenFragment"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment

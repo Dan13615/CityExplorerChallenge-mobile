@@ -8,5 +8,6 @@ data class ChallengeState(
     val targetPoint: GeoPoint,
     val startPoint: GeoPoint,
     val distanceText: String = "--",
-    val isActive: Boolean = false
+    val isActive: Boolean = false,
+    val selectionReason: String = ""
 )

@@ -9,4 +9,6 @@
     <string name="password">Password</string>
     <string name="login">Login</string>
     <string name="register_prompt">Don\'t have an account? Register</string>
+    <string name="random_challenge">Random Challenge</string>
+    <string name="choose_adventure">Choose your next adventure</string>
 </resources>

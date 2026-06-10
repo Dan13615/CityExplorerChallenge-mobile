@@ -23,11 +23,13 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
 
     private val viewModel: ChallengeViewModel by activityViewModels()
     private var locationManager: LocationManager? = null
+    private var isRandomRequested = false
+    
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
-            triggerChallengeCreationWorkflow()
+            triggerChallengeCreationWorkflow(isRandomRequested)
         } else {
             Toast.makeText(context, "Location permission is required to start a challenge!", Toast.LENGTH_SHORT).show()
         }
@@ -89,8 +91,18 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
         viewModel.loadHistory(requireContext())
         viewModel.loadActiveChallenge(requireContext())
 
+        viewModel.challengeProposals.observe(viewLifecycleOwner) { proposals ->
+            if (proposals != null && proposals.isNotEmpty()) {
+                findNavController().navigate(R.id.action_main_to_proposals)
+            }
+        }
+
         view.findViewById<Button>(R.id.btn_new_challenge).setOnClickListener {
-            checkPermissionsAndStartChallenge()
+            checkPermissionsAndStartChallenge(isRandom = false)
+        }
+
+        view.findViewById<Button>(R.id.btn_random_challenge).setOnClickListener {
+            checkPermissionsAndStartChallenge(isRandom = true)
         }
 
         view.findViewById<Button>(R.id.btn_open_map).setOnClickListener {
@@ -110,13 +122,14 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
         }
     }
 
-    private fun checkPermissionsAndStartChallenge() {
+    private fun checkPermissionsAndStartChallenge(isRandom: Boolean = false) {
+        isRandomRequested = isRandom
         val hasFineLocation = ContextCompat.checkSelfPermission(
             requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
         if (hasFineLocation) {
-            triggerChallengeCreationWorkflow()
+            triggerChallengeCreationWorkflow(isRandom)
         } else {
             requestPermissionLauncher.launch(
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -124,7 +137,7 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
         }
     }
 
-    private fun triggerChallengeCreationWorkflow() {
+    private fun triggerChallengeCreationWorkflow(isRandom: Boolean = false) {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             val lastKnownGpsLocation = locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             val lastKnownNetworkLocation = locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
@@ -133,17 +146,26 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
 
             if (bestLocation != null) {
                 val realUserGpsFix = GeoPoint(bestLocation.latitude, bestLocation.longitude)
-                showNewChallengeDialog(realUserGpsFix)
+                if (isRandom) {
+                    viewModel.proposeRandomChallenges(requireContext(), realUserGpsFix.latitude, realUserGpsFix.longitude)
+                } else {
+                    showNewChallengeDialog(realUserGpsFix)
+                }
             } else {
                 Toast.makeText(context, "No GPS fix found yet. Using default fallback location.", Toast.LENGTH_SHORT).show()
-                showNewChallengeDialog(GeoPoint(50.0617, 19.9378))
+                val fallback = GeoPoint(50.0617, 19.9378)
+                if (isRandom) {
+                    viewModel.proposeRandomChallenges(requireContext(), fallback.latitude, fallback.longitude)
+                } else {
+                    showNewChallengeDialog(fallback)
+                }
             }
         }
     }
 
     private fun showNewChallengeDialog(userPoint: GeoPoint) {
-        val categories = arrayOf("Historical Places", "Restaurants", "Cafes")
-        val checkedItems = booleanArrayOf(false, false, false)
+        val categories = arrayOf("Historical Places", "Restaurants", "Cafes", "Parks", "Tourist Attractions")
+        val checkedItems = booleanArrayOf(false, false, false, false, false)
 
         AlertDialog.Builder(requireContext())
             .setTitle("Generate New Adventure Location")
@@ -155,6 +177,8 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
                 if (checkedItems[0]) selectedTags.add("historic")
                 if (checkedItems[1]) selectedTags.add("amenity=restaurant")
                 if (checkedItems[2]) selectedTags.add("amenity=cafe")
+                if (checkedItems[3]) selectedTags.add("leisure=park")
+                if (checkedItems[4]) selectedTags.add("tourism=attraction")
 
                 if (selectedTags.isEmpty()) {
                     Toast.makeText(context, "Please choose a filter configuration!", Toast.LENGTH_SHORT).show()
