@@ -39,20 +39,16 @@ import androidx.core.graphics.createBitmap
 
 class MapFragment : Fragment(R.layout.fragment_map) {
 
-    private val GRAPH_HOPPER_API_KEY = BuildConfig.GRAPH_HOPPER_API_KEY
-
+    private val GEOAPIFY_API_KEY = BuildConfig.GEOAPIFY_API_KEY
     private val viewModel: ChallengeViewModel by activityViewModels()
-
     private lateinit var mapView: MapView
     private lateinit var progressBar: ProgressBar
     private lateinit var tvTargetName: TextView
     private lateinit var tvDistance: TextView
-
     private var myLocationOverlay: MyLocationNewOverlay? = null
     private var roadPolyline: Polyline? = null
     private var targetMarker: Marker? = null
     private var locationManager: LocationManager? = null
-
     private var hasCalculatedInitialRoute = false
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -161,13 +157,13 @@ class MapFragment : Fragment(R.layout.fragment_map) {
     private fun getWalkingRoute(start: GeoPoint, stop: GeoPoint) {
         if (start.latitude == 0.0 && start.longitude == 0.0) return
         if (stop.latitude == 0.0 && stop.longitude == 0.0) return
-        if (GRAPH_HOPPER_API_KEY == "YOUR_GRAPH_HOPPER_API_KEY") return
+        if (GEOAPIFY_API_KEY == "YOUR_GEOAPIFY_API_KEY" || GEOAPIFY_API_KEY.isEmpty()) return
         if (hasCalculatedInitialRoute) return
 
         hasCalculatedInitialRoute = true
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val urlString = "https://graphhopper.com/api/1/route?point=${start.latitude},${start.longitude}&point=${stop.latitude},${stop.longitude}&profile=foot&points_encoded=false&key=$GRAPH_HOPPER_API_KEY"
+            val urlString = "https://api.geoapify.com/v1/routing?waypoints=${start.latitude},${start.longitude}|${stop.latitude},${stop.longitude}&mode=walk&apiKey=$GEOAPIFY_API_KEY"
             val routePoints = ArrayList<GeoPoint>()
             var distanceText = "Distance: Error"
 
@@ -180,11 +176,12 @@ class MapFragment : Fragment(R.layout.fragment_map) {
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }
                     val jsonResponse = JSONObject(response)
-                    val paths = jsonResponse.getJSONArray("paths")
+                    val features = jsonResponse.getJSONArray("features")
 
-                    if (paths.length() > 0) {
-                        val pathObject = paths.getJSONObject(0)
-                        val distanceInMeters = pathObject.getDouble("distance")
+                    if (features.length() > 0) {
+                        val feature = features.getJSONObject(0)
+                        val properties = feature.getJSONObject("properties")
+                        val distanceInMeters = properties.getDouble("distance")
 
                         distanceText = if (distanceInMeters >= 1000) {
                             String.format("Distance: %.2f km", distanceInMeters / 1000.0)
@@ -192,17 +189,25 @@ class MapFragment : Fragment(R.layout.fragment_map) {
                             String.format("Distance: %d m", distanceInMeters.toInt())
                         }
 
-                        val pointsObj = pathObject.getJSONObject("points")
-                        val coordinates = pointsObj.getJSONArray("coordinates")
+                        val geometry = feature.getJSONObject("geometry")
+                        val type = geometry.getString("type")
+                        val coordinates = geometry.getJSONArray("coordinates")
 
-                        for (i in 0 until coordinates.length()) {
-                            val coord = coordinates.getJSONArray(i)
-                            routePoints.add(GeoPoint(coord.getDouble(1), coord.getDouble(0)))
+                        if (type == "LineString") {
+                            for (i in 0 until coordinates.length()) {
+                                val coord = coordinates.getJSONArray(i)
+                                routePoints.add(GeoPoint(coord.getDouble(1), coord.getDouble(0)))
+                            }
+                        } else if (type == "MultiLineString") {
+                            for (i in 0 until coordinates.length()) {
+                                val line = coordinates.getJSONArray(i)
+                                for (j in 0 until line.length()) {
+                                    val coord = line.getJSONArray(j)
+                                    routePoints.add(GeoPoint(coord.getDouble(1), coord.getDouble(0)))
+                                }
+                            }
                         }
                     }
-                } else if (connection.responseCode == 429) {
-                    distanceText = "Throttled (Rate Limit 429)"
-                    hasCalculatedInitialRoute = false
                 } else {
                     distanceText = "Distance API Error (${connection.responseCode})"
                     hasCalculatedInitialRoute = false
@@ -220,8 +225,8 @@ class MapFragment : Fragment(R.layout.fragment_map) {
                     roadPolyline?.let { mapView.overlays.remove(it) }
                     roadPolyline = Polyline(mapView).apply {
                         setPoints(routePoints)
-                        outlinePaint.color = Color.RED
-                        outlinePaint.strokeWidth = 8f
+                        outlinePaint.color = Color.BLUE
+                        outlinePaint.strokeWidth = 2f
                     }
                     mapView.overlays.add(roadPolyline)
                     mapView.invalidate()
