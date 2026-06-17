@@ -38,9 +38,16 @@ class HistoryFragment : Fragment(R.layout.fragment_history) {
             } else {
                 for (item in history) {
                     val card = inflater.inflate(R.layout.item_history_card, historyContainer, false)
-                    card.findViewById<TextView>(R.id.tv_history_name).text = "[Completed] ${item.name}"
+                    card.findViewById<TextView>(R.id.tv_history_name).text = "[${item.status}] ${item.name}"
                     card.findViewById<TextView>(R.id.tv_history_details).text =
-                        "Category: ${item.category}\nCompleted: ${dateFormat.format(Date(item.timestamp))}"
+                        "Category: ${item.category}\nDistance: ${item.distanceText}\nCompleted: ${dateFormat.format(Date(item.timestamp))}"
+                    
+                    if (item.status == "Gave Up") {
+                        card.findViewById<TextView>(R.id.tv_history_name).setTextColor(resources.getColor(R.color.errorColor, null))
+                    } else {
+                        card.findViewById<TextView>(R.id.tv_history_name).setTextColor(resources.getColor(R.color.successColor, null))
+                    }
+
                     historyContainer.addView(card)
                 }
             }

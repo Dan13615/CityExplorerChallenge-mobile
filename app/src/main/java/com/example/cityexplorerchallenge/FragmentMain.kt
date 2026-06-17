@@ -75,11 +75,12 @@ class MainScreenFragment : Fragment(R.layout.fragment_main) {
         }
 
         viewModel.completedChallenges.observe(viewLifecycleOwner) { history ->
-            val total = history.size
+            val completedOnly = history.filter { it.status == "Completed" }
+            val total = completedOnly.size
             tvTotalCompleted.text = "Total completed: $total"
 
             val today = Calendar.getInstance()
-            val completedToday = history.count { 
+            val completedToday = completedOnly.count {
                 val cal = Calendar.getInstance()
                 cal.timeInMillis = it.timestamp
                 cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&

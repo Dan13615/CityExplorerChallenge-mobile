@@ -21,7 +21,8 @@ data class CompletedChallenge(
     val latitude: Double,
     val longitude: Double,
     val timestamp: Long,
-    val distanceText: String
+    val distanceText: String,
+    val status: String = "Completed"
 )
 
 class ChallengeViewModel : ViewModel() {
@@ -38,10 +39,15 @@ class ChallengeViewModel : ViewModel() {
     private val _challengeProposals = MutableLiveData<List<ChallengeState>?>()
     val challengeProposals: LiveData<List<ChallengeState>?> = _challengeProposals
 
+    private val AUTH_API_URL = BuildConfig.AUTH_API_URL
+
     fun createDynamicChallenge(context: Context, userLatitude: Double, userLongitude: Double, tags: List<String>) {
+        val oldChallenge = _activeChallenge.value
         _isLoading.postValue(true)
 
         viewModelScope.launch(Dispatchers.IO) {
+            handleGaveUpOldChallengeSync(context, oldChallenge)
+
             val urlString = "https://overpass-api.de/api/interpreter"
             val subQueries = StringBuilder()
 
@@ -109,7 +115,11 @@ class ChallengeViewModel : ViewModel() {
                                 isActive = true
                             )
                             _activeChallenge.value = newState
-                            saveActiveChallenge(context, newState)
+                            viewModelScope.launch(Dispatchers.IO) {
+                                saveActiveChallengeSync(context, newState)
+                                loadHistorySync(context)
+                                pushDataToRemoteSync(context)
+                            }
                         }
                     } else {
                         postErrorClear(context)
@@ -124,10 +134,39 @@ class ChallengeViewModel : ViewModel() {
         }
     }
 
+    private fun handleGaveUpOldChallengeSync(context: Context, old: ChallengeState?) {
+        if (old != null && old.isActive) {
+            val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+            val completedChallengesJson = sharedPrefs.getString("completed_list", "[]") ?: "[]"
+
+            val jsonArray = JSONArray(completedChallengesJson)
+            val challengeJson = JSONObject().apply {
+                put("name", old.name)
+                put("category", old.category)
+                put("lat", old.targetPoint.latitude)
+                put("lon", old.targetPoint.longitude)
+                put("timestamp", System.currentTimeMillis())
+                put("distance", old.distanceText)
+                put("status", "Gave Up")
+            }
+            jsonArray.put(challengeJson)
+
+            sharedPrefs.edit().apply {
+                putString("completed_list", jsonArray.toString())
+                remove("active_challenge")
+            }.apply()
+        }
+    }
+
     fun updateDistance(context: Context, distanceText: String) {
         val updated = _activeChallenge.value?.copy(distanceText = distanceText)
         _activeChallenge.value = updated
-        updated?.let { saveActiveChallenge(context, it) }
+        updated?.let { 
+            viewModelScope.launch(Dispatchers.IO) {
+                saveActiveChallengeSync(context, it)
+                pushDataToRemoteSync(context)
+            }
+        }
     }
 
     fun completeActiveChallenge(context: Context) {
@@ -145,6 +184,7 @@ class ChallengeViewModel : ViewModel() {
                 put("lon", challenge.targetPoint.longitude)
                 put("timestamp", System.currentTimeMillis())
                 put("distance", challenge.distanceText)
+                put("status", "Completed")
             }
             jsonArray.put(challengeJson)
 
@@ -153,7 +193,8 @@ class ChallengeViewModel : ViewModel() {
                 remove("active_challenge")
             }.apply()
 
-            loadHistory(context) // Refresh history after completion
+            loadHistorySync(context)
+            pushDataToRemoteSync(context)
 
             withContext(Dispatchers.Main) {
                 _activeChallenge.value = null
@@ -163,28 +204,32 @@ class ChallengeViewModel : ViewModel() {
 
     fun loadHistory(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
-            val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
-            val jsonString = sharedPrefs.getString("completed_list", "[]") ?: "[]"
-            val jsonArray = JSONArray(jsonString)
-            val list = mutableListOf<CompletedChallenge>()
-
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.getJSONObject(i)
-                list.add(
-                    CompletedChallenge(
-                        obj.getString("name"),
-                        obj.getString("category"),
-                        obj.getDouble("lat"),
-                        obj.getDouble("lon"),
-                        obj.getLong("timestamp"),
-                        obj.optString("distance", "--")
-                    )
-                )
-            }
-            // Sort by most recent
-            list.sortByDescending { it.timestamp }
-            _completedChallenges.postValue(list)
+            loadHistorySync(context)
         }
+    }
+
+    private fun loadHistorySync(context: Context) {
+        val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+        val jsonString = sharedPrefs.getString("completed_list", "[]") ?: "[]"
+        val jsonArray = JSONArray(jsonString)
+        val list = mutableListOf<CompletedChallenge>()
+
+        for (i in 0 until jsonArray.length()) {
+            val obj = jsonArray.getJSONObject(i)
+            list.add(
+                CompletedChallenge(
+                    obj.getString("name"),
+                    obj.getString("category"),
+                    obj.getDouble("lat"),
+                    obj.getDouble("lon"),
+                    obj.getLong("timestamp"),
+                    obj.optString("distance", "--"),
+                    obj.optString("status", "Completed")
+                )
+            )
+        }
+        list.sortByDescending { it.timestamp }
+        _completedChallenges.postValue(list)
     }
 
     fun loadActiveChallenge(context: Context) {
@@ -207,9 +252,17 @@ class ChallengeViewModel : ViewModel() {
     }
 
     fun setActiveChallenge(context: Context, challenge: ChallengeState) {
-        _activeChallenge.value = challenge
-        saveActiveChallenge(context, challenge)
-        clearProposals()
+        val oldChallenge = _activeChallenge.value
+        viewModelScope.launch(Dispatchers.IO) {
+            handleGaveUpOldChallengeSync(context, oldChallenge)
+            saveActiveChallengeSync(context, challenge)
+            loadHistorySync(context)
+            pushDataToRemoteSync(context)
+            withContext(Dispatchers.Main) {
+                _activeChallenge.value = challenge
+                clearProposals()
+            }
+        }
     }
 
     fun clearProposals() {
@@ -273,7 +326,7 @@ class ChallengeViewModel : ViewModel() {
                         }
 
                         val distance = GeoPoint(lat, lon).distanceToAsDouble(userGeoPoint)
-                        if (distance < 500.0) continue // Only propose challenges at least 500m away
+                        if (distance < 500.0) continue
 
                         val distText = if (distance >= 1000) {
                             String.format(Locale.getDefault(), "%.2f km", distance / 1000.0)
@@ -291,21 +344,16 @@ class ChallengeViewModel : ViewModel() {
                         ))
                     }
 
-                    // Algorithm logic
                     val nearestMostVisited = rawProposals
                         .filter { it.category == mostVisitedCategory }
                         .minByOrNull { it.targetPoint.distanceToAsDouble(userGeoPoint) }
 
                     val finalProposals = mutableListOf<ChallengeState>()
-                    
-                    // 1. Add nearest from liked category if exists
                     nearestMostVisited?.let {
                         finalProposals.add(it.copy(selectionReason = "You love this category! This is the closest discovery of its kind near you."))
                     }
 
-                    // 2. Add others, prioritizing least visited
                     val remainingPool = rawProposals.filter { it.name != nearestMostVisited?.name }.shuffled()
-                    
                     val leastVisitedPool = remainingPool.filter { it.category == leastVisitedCategory }
                     val othersPool = remainingPool.filter { it.category != leastVisitedCategory }
 
@@ -333,7 +381,7 @@ class ChallengeViewModel : ViewModel() {
         }
     }
 
-    private fun saveActiveChallenge(context: Context, state: ChallengeState) {
+    private fun saveActiveChallengeSync(context: Context, state: ChallengeState) {
         val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
         val json = JSONObject().apply {
             put("name", state.name)
@@ -352,8 +400,91 @@ class ChallengeViewModel : ViewModel() {
         withContext(Dispatchers.Main) {
             _isLoading.value = false
             _activeChallenge.value = null
-            context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
-                .edit().remove("active_challenge").apply()
+            viewModelScope.launch(Dispatchers.IO) {
+                context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+                    .edit().remove("active_challenge").apply()
+                pushDataToRemoteSync(context)
+            }
         }
+    }
+
+    // --- Remote Sync ---
+
+    fun pullFromRemote(context: Context, username: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val url = URL("$AUTH_API_URL/history?username=$username")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.setRequestProperty("User-Agent", "CityExplorer/1.0")
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                    val jsonResponse = JSONObject(responseText)
+                    
+                    val historyArray = jsonResponse.optJSONArray("history") ?: JSONArray()
+                    val activeObj = jsonResponse.optJSONObject("active")
+
+                    val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+                    sharedPrefs.edit().apply {
+                        putString("completed_list", historyArray.toString())
+                        if (activeObj != null) {
+                            putString("active_challenge", activeObj.toString())
+                        } else {
+                            remove("active_challenge")
+                        }
+                    }.apply()
+
+                    withContext(Dispatchers.Main) {
+                        loadHistorySync(context)
+                        loadActiveChallenge(context)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun pushDataToRemote(context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            pushDataToRemoteSync(context)
+        }
+    }
+
+    private fun pushDataToRemoteSync(context: Context) {
+        val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+        val username = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).getString("username", null) ?: return
+        
+        val historyJson = sharedPrefs.getString("completed_list", "[]")
+        val activeJson = sharedPrefs.getString("active_challenge", null)
+
+        try {
+            val url = URL("$AUTH_API_URL/history")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+
+            val requestBody = JSONObject().apply {
+                put("username", username)
+                put("history", JSONArray(historyJson))
+                if (activeJson != null) {
+                    put("active", JSONObject(activeJson))
+                }
+            }.toString()
+
+            connection.outputStream.use { it.write(requestBody.toByteArray()) }
+            connection.responseCode
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun clearLocalStorage(context: Context) {
+        val sharedPrefs = context.getSharedPreferences("completed_challenges", Context.MODE_PRIVATE)
+        sharedPrefs.edit().clear().apply()
+        _completedChallenges.postValue(emptyList())
+        _activeChallenge.postValue(null)
     }
 }

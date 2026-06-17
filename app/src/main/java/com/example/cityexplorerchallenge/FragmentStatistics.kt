@@ -21,7 +21,9 @@ class StatisticsFragment : Fragment(R.layout.fragment_statistics) {
         val tvMostExplored = view.findViewById<TextView>(R.id.tv_stats_most_explored)
 
         viewModel.completedChallenges.observe(viewLifecycleOwner) { history ->
-            if (history.isNullOrEmpty()) {
+            val completedOnly = history.filter { it.status == "Completed" }
+
+            if (completedOnly.isEmpty()) {
                 tvTotal.text = "Total completed challenges: 0"
                 tvDistance.text = "Start exploring to see stats!"
                 tvCategories.text = "No categories yet"
@@ -29,11 +31,11 @@ class StatisticsFragment : Fragment(R.layout.fragment_statistics) {
                 return@observe
             }
 
-            val totalCount = history.size
+            val totalCount = completedOnly.size
             tvTotal.text = "Total completed challenges: $totalCount"
             tvDistance.text = "You have explored many places!"
 
-            val categoryCounts = history.groupingBy { it.category }.eachCount()
+            val categoryCounts = completedOnly.groupingBy { it.category }.eachCount()
             val categoriesText = categoryCounts.entries.joinToString("\n") { "${it.key}: ${it.value}" }
             tvCategories.text = categoriesText
 

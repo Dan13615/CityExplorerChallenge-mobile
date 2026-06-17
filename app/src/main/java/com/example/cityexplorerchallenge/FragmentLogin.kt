@@ -1,5 +1,6 @@
 package com.example.cityexplorerchallenge
 
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -7,12 +8,15 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 
 class LoginFragment : Fragment(R.layout.fragment_login) {
 
     private val authViewModel: AuthViewModel by viewModels()
+    private val challengeViewModel: ChallengeViewModel by activityViewModels()
+    private var isRegistration = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -29,6 +33,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
             if (username.isBlank() || password.isBlank()) {
                 Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             } else {
+                isRegistration = false
                 authViewModel.login(username, password)
             }
         }
@@ -39,6 +44,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
             if (username.isBlank() || password.isBlank()) {
                 Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             } else {
+                isRegistration = true
                 authViewModel.register(username, password)
             }
         }
@@ -52,7 +58,18 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         authViewModel.authState.observe(viewLifecycleOwner) { result ->
             when (result) {
                 is AuthViewModel.AuthResult.Success -> {
-                    Toast.makeText(context, "Welcome, ${result.username}!", Toast.LENGTH_SHORT).show()
+                    // Save username for remote sync
+                    val sharedPrefs = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                    sharedPrefs.edit().putString("username", result.username).apply()
+
+                    if (isRegistration) {
+                        challengeViewModel.clearLocalStorage(requireContext())
+                        Toast.makeText(context, "Welcome, ${result.username}! Account created.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        challengeViewModel.pullFromRemote(requireContext(), result.username)
+                        Toast.makeText(context, "Welcome back, ${result.username}!", Toast.LENGTH_SHORT).show()
+                    }
+
                     findNavController().navigate(R.id.action_login_to_main)
                 }
                 is AuthViewModel.AuthResult.Error -> {
