@@ -10,5 +10,8 @@
     <string name="login">Login</string>
     <string name="register_prompt">Don\'t have an account? Register</string>
     <string name="random_challenge">Random Challenge</string>
-    <string name="choose_adventure">Choose your next adventure</string>
+    <string name="choose_adventure">Choose new challenge</string>
+    <string name="active_challenge">Active Challenge</string>
+    <string name="no_active_challenge_yet">No active challenge yet</string>
+    <string name="open_map">Open Map</string>
 </resources>

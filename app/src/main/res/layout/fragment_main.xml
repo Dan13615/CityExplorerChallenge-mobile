@@ -50,7 +50,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Active Challenge"
+                        android:text="@string/active_challenge"
                         android:textColor="@color/secondaryFontColor"
                         android:textSize="18sp" />
 
@@ -59,7 +59,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="No active challenge yet"
+                        android:text="@string/no_active_challenge_yet"
                         android:textColor="@color/fontColor"
                         android:textSize="26sp"
                         android:textStyle="bold" />
@@ -98,7 +98,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:backgroundTint="@color/buttonColor"
-                        android:text="Open Map"
+                        android:text="@string/open_map"
                         android:textSize="18sp"
                         android:textColor="@color/fontColor" />
 
@@ -164,7 +164,7 @@
                         android:backgroundTint="@color/buttonColor"
                         android:textColor="@color/fontColor"
                         android:textSize="18sp"
-                        android:text="New Challenge" />
+                        android:text="@string/random_challenge" />
 
                     <Button
                         android:id="@+id/btn_random_challenge"
@@ -174,7 +174,7 @@
                         android:backgroundTint="@color/secondaryDarkBackground"
                         android:textColor="@color/fontColor"
                         android:textSize="18sp"
-                        android:text="Random Challenge" />
+                        android:text="@string/choose_adventure" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

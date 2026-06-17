@@ -226,7 +226,7 @@ class MapFragment : Fragment(R.layout.fragment_map) {
                     roadPolyline = Polyline(mapView).apply {
                         setPoints(routePoints)
                         outlinePaint.color = Color.BLUE
-                        outlinePaint.strokeWidth = 2f
+                        outlinePaint.strokeWidth = 4f
                     }
                     mapView.overlays.add(roadPolyline)
                     mapView.invalidate()
