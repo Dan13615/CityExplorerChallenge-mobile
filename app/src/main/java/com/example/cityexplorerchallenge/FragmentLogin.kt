@@ -58,7 +58,6 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         authViewModel.authState.observe(viewLifecycleOwner) { result ->
             when (result) {
                 is AuthViewModel.AuthResult.Success -> {
-                    // Save username for remote sync
                     val sharedPrefs = requireContext().getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
                     sharedPrefs.edit().putString("username", result.username).apply()
 
